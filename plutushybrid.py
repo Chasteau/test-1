@@ -7,11 +7,12 @@ import sys
 import pickle
 import hashlib
 import multiprocessing
+import smtplib
 from mnemonic import Mnemonic
 from random import choice, seed
 from binascii import hexlify, unhexlify
 
-DATABASE = r'database/JAN_13_2020/'   
+DATABASE = r'database/FEB-07-2020/'   
 
 def b2h(b):
     h = hexlify(b)
@@ -52,6 +53,25 @@ def generate_address(mnemonic_words):
     ).ChildKey(0).ChildKey(0)
     return bip32_child_key_obj.Address()
 
+def send_email(address):
+  FROM_EMAIL_ADDRESS = 'btcgrenada@gmail.com'
+  TO_EMAIL_ADDRESS = 'davidchasteau@gmail.com'
+  EMAIL_PASSWORD = 'grenada45'
+
+  with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+    smtp.ehlo()
+    smtp.starttls()
+    smtp.ehlo()
+
+    smtp.login(FROM_EMAIL_ADDRESS, EMAIL_PASSWORD)
+
+    subject = 'FOUND SOMETHING!!'
+    body = 'Check [ '+str(address) +' ] Something was found!!'
+
+    msg = f'subject: {subject}\n\n{body}'
+
+    smtp.sendmail(FROM_EMAIL_ADDRESS, TO_EMAIL_ADDRESS, msg)
+
 def process(new, private_key, address, database):
 	"""
 	Accept an address and query the database. If the address is found in the 
@@ -64,10 +84,12 @@ def process(new, private_key, address, database):
 	   address in database[1] or \
 	   address in database[2] or \
 	   address in database[3]:
+
 		with open('KEYS.txt', 'a') as file:
 			file.write('Private Key: ' + str(private_key) + '\n' +
 				   'Word Seed: ' + str(new) + '\n' +
-			           'address: ' + str(address) + '\n\n')                      
+			           'address: ' + str(address) + '\n\n')  
+			send_email(address)                    
 	else: 
 		print('Address = ', str(address), '\n', 'Private Key = ', str(private_key), '\n', 'Seed = ', str(new))
 
